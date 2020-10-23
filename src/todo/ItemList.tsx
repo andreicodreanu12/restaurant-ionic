@@ -3,22 +3,13 @@ import { IonContent, IonFabButton, IonHeader, IonPage, IonTitle, IonToolbar, Ion
 import { add } from 'ionicons/icons';
 import MenuItem from './MenuItem';
 import { getLogger } from '../core';
+import { useItems } from './useItems';
 
 const log = getLogger('ItemList')
 
 const ItemList: React.FC = () => {
-  const [items, setItems] = useState([
-    { id: '1', title: 'Pasta Carbonara', description: 'Main entrees', price: 18 },
-    { id: '2', title: 'Salad', description: 'Second courses', price: 20 },
-  ]);
-  const addItem = () => {
-    const id = `${items.length + 1}`;
-    const title = `New item ${id}`
-    const description = `New description ${id}`
-    const price = 30
-    log('ItemList addItem');
-    setItems(items.concat({ id, title, description, price }));
-  }
+  const { items, addItem } = useItems();
+  log('ItemList render');
   return(
     <IonPage>
       <IonHeader>
