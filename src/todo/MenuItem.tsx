@@ -1,9 +1,12 @@
 import React from 'react';
-import { ItemProps } from './useItems'
+import { IonItem, IonLabel } from '@ionic/react'
+import { ItemProps } from './ItemProps'
 
 const MenuItem: React.FC<ItemProps> = ({ id, title, description, price }) => {
   return (
-    <div>{title} {description}</div>
+    <IonItem>
+      <IonLabel>{title}</IonLabel>
+    </IonItem>
   );
 };
 

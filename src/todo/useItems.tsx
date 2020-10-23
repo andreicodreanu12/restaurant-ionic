@@ -1,36 +1,59 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getLogger } from '../core';
+import { ItemProps } from './ItemProps';
+import { getItems } from './itemApi';
 
 const log = getLogger('useItems');
 
-export interface ItemProps {
-  id?: string,
-  title: string,
-  description: string,
-  price: number;
+export interface ItemsState {
+  items?: ItemProps[],
+  fetching: boolean,
+  fetchingError?: Error
 }
 
-export interface ItemsProps {
-  items: ItemProps[],
+export interface ItemsProps extends ItemsState {
   addItem: () => void
 }
 
+
 export const useItems: () => ItemsProps = () => {
-  const [items, setItems] = useState([
-    { id: '1', title: 'Pasta Carbonara', description: 'Main entrees', price: 18 },
-    { id: '2', title: 'Salad', description: 'Second courses', price: 20 },
-  ]);
+  const [state, setState] = useState<ItemsState>({
+    items: undefined,
+    fetching: false,
+    fetchingError: undefined
+  });
+  const { items, fetching, fetchingError } = state;
   const addItem = () => {
-    const id = `${items.length + 1}`;
-    const title = `New item ${id}`
-    const description = `New description ${id}`
-    const price = 30
-    log('ItemList addItem');
-    setItems(items.concat({ id, title, description, price }));
+    log('addItem - TODO');
   };
-  log('returns');
+  useEffect(getItemsEffect, []);
   return {
     items,
+    fetching,
+    fetchingError,
     addItem
+  };
+
+  function getItemsEffect() {
+    let canceled = false;
+    fetchItems();
+    return () => {
+      canceled = true;
+    }
+
+    async function fetchItems() {
+      try{
+        log('fetch items started')
+        setState({ ...state, fetching: true });
+        const items = await getItems();
+        log('fetchItems succeded');
+        if(!canceled) {
+          setState({ ...state, items, fetching: false})
+        }
+      } catch(error) {
+        log('fetching items failed');
+        setState({ ...state, fetchingError: error, fetching: false});
+      }
+    }
   }
 }
