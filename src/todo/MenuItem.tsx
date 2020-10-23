@@ -9,7 +9,7 @@ interface ItemProps {
 
 const MenuItem: React.FC<ItemProps> = ({ id, title, description, price }) => {
   return (
-    <div>{title}</div>
+    <div>{title} {description}</div>
   );
 };
 

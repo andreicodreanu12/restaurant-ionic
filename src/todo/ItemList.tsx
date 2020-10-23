@@ -1,8 +1,24 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
-import React from 'react';
-import Item from './MenuItem';
+import React, { useState } from 'react';
+import { IonContent, IonFabButton, IonHeader, IonPage, IonTitle, IonToolbar, IonFab, IonIcon } from '@ionic/react';
+import { add } from 'ionicons/icons';
+import MenuItem from './MenuItem';
+import { getLogger } from '../core';
+
+const log = getLogger('ItemList')
 
 const ItemList: React.FC = () => {
+  const [items, setItems] = useState([
+    { id: '1', title: 'Pasta Carbonara', description: 'Main entrees', price: 18 },
+    { id: '2', title: 'Salad', description: 'Second courses', price: 20 },
+  ]);
+  const addItem = () => {
+    const id = `${items.length + 1}`;
+    const title = `New item ${id}`
+    const description = `New description ${id}`
+    const price = 30
+    log('ItemList addItem');
+    setItems(items.concat({ id, title, description, price }));
+  }
   return(
     <IonPage>
       <IonHeader>
@@ -11,8 +27,12 @@ const ItemList: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent>
-        <Item title="Pasta Carbonara" description="Main entrees" price= {18} />
-        <Item title="Salad" description="Second courses" price= {20} />
+        {items.map(( {id, title, description, price}) => <MenuItem key={id} title={title} description={description} price={price} />)}
+        <IonFab vertical="bottom" horizontal="end" slot="fixed">
+          <IonFabButton onClick={addItem}>
+            <IonIcon icon={add} />
+          </IonFabButton>
+        </IonFab>
       </IonContent>
     </IonPage>
   )
