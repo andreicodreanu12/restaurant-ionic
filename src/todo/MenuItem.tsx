@@ -6,6 +6,8 @@ const MenuItem: React.FC<ItemProps> = ({ id, title, description, price }) => {
   return (
     <IonItem>
       <IonLabel>{title}</IonLabel>
+      <IonLabel>{description}</IonLabel>
+      <IonLabel>{price}</IonLabel>
     </IonItem>
   );
 };
