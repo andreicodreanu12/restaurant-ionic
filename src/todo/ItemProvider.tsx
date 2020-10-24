@@ -2,19 +2,22 @@ import React, { useCallback, useEffect, useReducer } from 'react';
 import PropTypes from 'prop-types';
 import { getLogger } from '../core';
 import { ItemProps } from './ItemProps';
-import { createItem, getItems, updateItem } from './itemApi';
+import { createItem, getItems, newWebSocket, updateItem, removeItem } from './itemApi';
 
 const log = getLogger('ItemProvider');
 
 type SaveItemFn = (item: ItemProps) => Promise<any>;
+type DeleteItemFn = (item: ItemProps) => Promise<any>;
 
 export interface ItemsState {
   items?: ItemProps[],
   fetching: boolean,
   fetchingError?: Error | null,
   saving: boolean,
+  deleting: boolean,
   savingError?: Error | null,
   saveItem?: SaveItemFn,
+  deleteItem?: DeleteItemFn
 }
 
 interface ActionProps {
@@ -25,6 +28,7 @@ interface ActionProps {
 const initialState: ItemsState = {
   fetching: false,
   saving: false,
+  deleting: false
 };
 
 const FETCH_ITEMS_STARTED = 'FETCH_ITEMS_STARTED';
@@ -33,6 +37,9 @@ const FETCH_ITEMS_FAILED = 'FETCH_ITEMS_FAILED';
 const SAVE_ITEM_STARTED = 'SAVE_ITEM_STARTED';
 const SAVE_ITEM_SUCCEEDED = 'SAVE_ITEM_SUCCEEDED';
 const SAVE_ITEM_FAILED = 'SAVE_ITEM_FAILED';
+const DELETE_ITEM_STARTED = "DELETE_ITEM_STARTED";
+const DELETE_ITEM_SUCCEEDED = "DELETE_ITEM_SUCCEEDED";
+const DELETE_ITEM_FAILED = "DELETE_ITEM_FAILED";
 
 const reducer: (state: ItemsState, action: ActionProps) => ItemsState =
   (state, { type, payload }) => {
@@ -70,10 +77,12 @@ interface ItemProviderProps {
 
 export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { items, fetching, fetchingError, saving, savingError } = state;
+  const { items, fetching, fetchingError, saving, savingError, deleting } = state;
   useEffect(getItemsEffect, []);
+  // useEffect(wsEffect, []);
   const saveItem = useCallback<SaveItemFn>(saveItemCallback, []);
-  const value = { items, fetching, fetchingError, saving, savingError, saveItem };
+  const deleteItem = useCallback<DeleteItemFn>(deleteItemCallback, []);
+  const value = { items, fetching, fetchingError, saving, savingError, saveItem, deleting, deleteItem };
   log('returns');
   return (
     <ItemContext.Provider value={value}>
@@ -114,6 +123,40 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
     } catch (error) {
       log('saveItem failed');
       dispatch({ type: SAVE_ITEM_FAILED, payload: { error } });
+    }
+  }
+
+  async function deleteItemCallback(item: ItemProps) {
+    try {
+      log("delete started");
+      dispatch({ type: DELETE_ITEM_STARTED });
+      const deletedItem = await removeItem(item);
+      log("delete succeeded");
+      console.log(deletedItem);
+      dispatch({ type: DELETE_ITEM_SUCCEEDED, payload: { item: item } });
+    } catch (error) {
+      log("delete failed");
+      dispatch({ type: DELETE_ITEM_FAILED, payload: { error } });
+    }
+  }
+
+  function wsEffect() {
+    let canceled = false;
+    log('wsEffect - connecting');
+    const closeWebSocket = newWebSocket(message => {
+      if (canceled) {
+        return;
+      }
+      const { event, payload: { item }} = message;
+      log(`ws message, item ${event}`);
+      // if (event === 'created' || event === 'updated') {
+      //   dispatch({ type: SAVE_ITEM_SUCCEEDED, payload: { item } });
+      // }
+    });
+    return () => {
+      log('wsEffect - disconnecting');
+      canceled = true;
+      closeWebSocket();
     }
   }
 };

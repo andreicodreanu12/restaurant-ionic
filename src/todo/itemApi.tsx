@@ -15,6 +15,7 @@ function withLogs<T>(promise: Promise<ResponseProps<T>>, fnName: string): Promis
   log(`${fnName} - started`);
   return promise
     .then(res => {
+      log(res);
       log(`${fnName} - succeeded`);
       return Promise.resolve(res.data);
     })
@@ -31,7 +32,7 @@ const config = {
 };
 
 export const getItems: () => Promise<ItemProps[]> = () => {
-  return withLogs(axios.get(itemUrl, config), 'getItems');
+  return withLogs(axios.get(`${itemUrl}s`, config), 'getItems');
 }
 
 export const createItem: (item: ItemProps) => Promise<ItemProps[]> = item => {
@@ -40,4 +41,35 @@ export const createItem: (item: ItemProps) => Promise<ItemProps[]> = item => {
 
 export const updateItem: (item: ItemProps) => Promise<ItemProps[]> = item => {
   return withLogs(axios.put(`${itemUrl}/${item.id}`, item, config), 'updateItem');
+}
+
+export const removeItem:  (item: ItemProps) => Promise<ItemProps[]> = item => {
+  return withLogs(axios.delete(`${itemUrl}/${item.id}`, config), 'removeItem');
+}
+
+interface MessageData {
+  event: string;
+  payload: {
+    item: ItemProps;
+  };
+}
+
+export const newWebSocket = (onMessage: (data: MessageData) => void) => {
+  const ws = new WebSocket(`ws://${baseUrl}`)
+  ws.onopen = () => {
+    log('web socket onopen');
+  };
+  ws.onclose = () => {
+    log('web socket onclose');
+  };
+  ws.onerror = error => {
+    log('web socket onerror');
+  };
+  ws.onmessage = messageEvent => {
+    log('web socket onmessage');
+    onMessage(JSON.parse(messageEvent.data));
+  };
+  return () => {
+    ws.close();
+  }
 }

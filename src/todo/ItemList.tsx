@@ -33,7 +33,7 @@ const ItemList: React.FC<RouteComponentProps> =  ({ history }) => {
         {items && (
           <IonList>
             {items.map(({ id, title, description, price }) =>
-              <MenuItem key={id} title={title} description={description} price={price} onEdit={ id => history.push(`/item/${id}`)} />)}
+              <MenuItem key={id} id={id} title={title} description={description} price={price} onEdit={ id => history.push(`/item/${id}`)} />)}
           </IonList>
         )}
         {fetchingError && (
