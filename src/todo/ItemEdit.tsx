@@ -10,7 +10,9 @@ import {
   IonPage,
   IonItem,
   IonTitle,
-  IonToolbar
+  IonToolbar,
+  IonCheckbox,
+  IonDatetime
 } from '@ionic/react';
 import { ItemContext } from './ItemProvider';
 import { RouteComponentProps } from 'react-router';
@@ -25,6 +27,8 @@ const ItemEdit: React.FC<ItemEditProps> = ({ history, match }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState(Number);
+  const [introduced_at, setIntroduced] = useState('');
+  const [is_expensive, setExpensive] = useState(false);
   const [item, setItem] = useState<ItemProps>();
   useEffect(() => {
     const routeId = Number(match.params.id) || 0;
@@ -35,16 +39,18 @@ const ItemEdit: React.FC<ItemEditProps> = ({ history, match }) => {
       setTitle(item.title);
       setDescription(item.description);
       setPrice(item.price);
+      setIntroduced(item.introduced_at);
+      setExpensive(item.is_expensive);
     }
   }, [match.params.id, items]);
   const handleSave = () => {
-    const editedItem = item ? { ...item, title, description, price } : { title, description, price };
+    const editedItem = item ? { ...item, title, description, price, introduced_at, is_expensive } : { title, description, price, introduced_at, is_expensive };
     saveItem && saveItem(editedItem).then(() => history.goBack());
   };
   const handleDelete = () => {
     const editedItem = item
-      ? { ...item, title, description, price }
-      : { title, description, price };
+      ? { ...item, title, description, price, introduced_at, is_expensive }
+      : { title, description, price, introduced_at, is_expensive };
     deleteItem && deleteItem(editedItem).then(() => history.goBack());
   }
   return (
@@ -74,6 +80,20 @@ const ItemEdit: React.FC<ItemEditProps> = ({ history, match }) => {
         <IonItem>
           <IonLabel>Price: </IonLabel>
           <IonInput value={price} onIonChange={e => setPrice(Number(e.detail.value) || 0)} />
+        </IonItem>
+        {/* <IonItem>
+          <IonLabel>Introduced at: </IonLabel>
+          <IonInput value={introduced_at} onIonChange={e => setIntroduced(e.detail.value || '')} />
+        </IonItem> */}
+        <IonItem>
+          <IonLabel>Introduced at:</IonLabel>
+          <IonDatetime
+            displayFormat = "DD/MM/YYYY HH:mm"
+            value={introduced_at} onIonChange={ e => setIntroduced(e.detail.value || '') } />
+        </IonItem>
+        <IonItem>
+          <IonLabel>Is expensive: </IonLabel>
+          <IonCheckbox checked={is_expensive} onIonChange={e => setExpensive(e.detail.checked)} />
         </IonItem>
         <IonLoading isOpen={saving} />
         {savingError && (
