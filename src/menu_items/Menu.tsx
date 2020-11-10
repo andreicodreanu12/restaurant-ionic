@@ -37,7 +37,7 @@ const Menu: React.FC<RouteComponentProps> = ({ history }) => {
   const { Storage } = Plugins;
   const { fetching, fetchingError } = useContext(ItemContext);
   const [search, setSearch] = useState<string>("");
-  const [index, setIndex] = useState(1);
+  const [index, setIndex] = useState(0);
   const [items, setItems] = useState<MenuItemProps[]>([]);
   const selectOptions = ["Main courses", "Salad", "Dessert", "Second courses", "All"]
   const [filter, setFilter] = useState<string | undefined>(undefined);
@@ -49,16 +49,18 @@ const Menu: React.FC<RouteComponentProps> = ({ history }) => {
 
   async function fetchData(reset?: boolean) {
     const menuItems: MenuItemProps[] | undefined = reset ? [] : items;
-    const url: string = filter ? `http://localhost:3000/items?filter=${filter}` : `http://localhost:3000/items`;
+    const url: string = filter ? `http://localhost:3000/items?filter=${filter}` : `http://localhost:3000/items?index=${index}`;
+    log(url)
     const result = axios.get(url, authConfig(token))
     result.then(
       async (data) => {
         if (data && data.data && data.data.length > 0) {
           setItems([...menuItems, ...data.data])
           setIndex(index + 1);
-          setDisableInfiniteScroll(data.data.length < 3);
+          setDisableInfiniteScroll(data.data.length < 20);
         }
         else  {
+          setItems([...menuItems, ...[]])
           setDisableInfiniteScroll(true);
         }
       }
@@ -110,6 +112,13 @@ const Menu: React.FC<RouteComponentProps> = ({ history }) => {
               <MenuItem key={id} id={id} title={title} description={description} price={price} introduced_at={introduced_at} is_expensive={is_expensive} onEdit={id => history.push(`/item/${id}`)} />
             );
           })}
+        <IonInfiniteScroll
+          threshold="100px"
+          disabled={disableInfiniteScroll}
+          onIonInfinite={(e: CustomEvent<void>) => searchNext(e)}
+        >
+          <IonInfiniteScrollContent loadingText="Loading more dishes..."></IonInfiniteScrollContent>
+        </IonInfiniteScroll>
         {fetchingError && (
           <div>{fetchingError.message || 'Failed to fetch items'}</div>
         )}
