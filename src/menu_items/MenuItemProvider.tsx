@@ -1,23 +1,25 @@
-import React, { useCallback, useEffect, useReducer } from 'react';
+import React, { useCallback, useContext, useEffect, useReducer } from 'react';
 import PropTypes from 'prop-types';
 import { getLogger } from '../core';
-import { ItemProps } from './ItemProps';
-import { createItem, getItems, newWebSocket, updateItem, removeItem } from './itemApi';
+import { MenuItemProps } from './MenuItemProps';
+import { createItem, getItems, newWebSocket, updateItem, removeItem } from './menuApi';
+import { AuthContext } from '../auth';
 
-const log = getLogger('ItemProvider');
+const log = getLogger('MenuItemProvider');
 
-type SaveItemFn = (item: ItemProps) => Promise<any>;
-type DeleteItemFn = (item: ItemProps) => Promise<any>;
+type SaveItemFn = (item: MenuItemProps) => Promise<any>;
+type DeleteItemFn = (item: MenuItemProps) => Promise<any>;
 
 export interface ItemsState {
-  items?: ItemProps[],
+  items?: MenuItemProps[],
   fetching: boolean,
   fetchingError?: Error | null,
   saving: boolean,
   deleting: boolean,
   savingError?: Error | null,
   saveItem?: SaveItemFn,
-  deleteItem?: DeleteItemFn
+  deleteItem?: DeleteItemFn,
+  setItems?: void
 }
 
 interface ActionProps {
@@ -76,12 +78,13 @@ interface ItemProviderProps {
 }
 
 export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
+  const { token } = useContext(AuthContext);
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { items, fetching, fetchingError, saving, savingError, deleting } = state;
-  useEffect(getItemsEffect, []);
-  // useEffect(wsEffect, []);
-  const saveItem = useCallback<SaveItemFn>(saveItemCallback, []);
-  const deleteItem = useCallback<DeleteItemFn>(deleteItemCallback, []);
+  const { items, fetching, fetchingError, saving, savingError, deleting, setItems } = state;
+  useEffect(getItemsEffect, [token]);
+  useEffect(wsEffect, [token]);
+  const saveItem = useCallback<SaveItemFn>(saveItemCallback, [token]);
+  const deleteItem = useCallback<DeleteItemFn>(deleteItemCallback, [token]);
   const value = { items, fetching, fetchingError, saving, savingError, saveItem, deleting, deleteItem };
   log('returns');
   return (
@@ -98,10 +101,13 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
     }
 
     async function fetchItems() {
+      if (!token?.trim()) {
+        return;
+      }
       try {
         log('fetchItems started');
         dispatch({ type: FETCH_ITEMS_STARTED });
-        const items = await getItems();
+        const items = await getItems(token);
         log('fetchItems succeeded');
         if (!canceled) {
           dispatch({ type: FETCH_ITEMS_SUCCEEDED, payload: { items } });
@@ -113,11 +119,11 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
     }
   }
 
-  async function saveItemCallback(item: ItemProps) {
+  async function saveItemCallback(item: MenuItemProps) {
     try {
       log('saveItem started');
       dispatch({ type: SAVE_ITEM_STARTED });
-      const savedItem = await (item.id ? updateItem(item) : createItem(item));
+      const savedItem = await (item.id ? updateItem(token, item) : createItem(token, item));
       log('saveItem succeeded');
       dispatch({ type: SAVE_ITEM_SUCCEEDED, payload: { item: savedItem } });
     } catch (error) {
@@ -126,11 +132,11 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
     }
   }
 
-  async function deleteItemCallback(item: ItemProps) {
+  async function deleteItemCallback(item: MenuItemProps) {
     try {
       log("delete started");
       dispatch({ type: DELETE_ITEM_STARTED });
-      const deletedItem = await removeItem(item);
+      const deletedItem = await removeItem(token, item);
       log("delete succeeded");
       console.log(deletedItem);
       dispatch({ type: DELETE_ITEM_SUCCEEDED, payload: { item: item } });
@@ -143,20 +149,24 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
   function wsEffect() {
     let canceled = false;
     log('wsEffect - connecting');
-    const closeWebSocket = newWebSocket(message => {
-      if (canceled) {
-        return;
-      }
-      const { event, payload: { item }} = message;
-      log(`ws message, item ${event}`);
-      // if (event === 'created' || event === 'updated') {
-      //   dispatch({ type: SAVE_ITEM_SUCCEEDED, payload: { item } });
-      // }
-    });
+    let closeWebSocket: () => void;
+    if (token?.trim()) {
+      closeWebSocket = newWebSocket(token, data => {
+        if (canceled) {
+          return;
+        }
+        const { type, message: mes } = data;
+        if (mes!= undefined)
+          if (mes.type === 'created' || mes.type === 'updated') {
+            let item = mes.payload
+            dispatch({ type: SAVE_ITEM_SUCCEEDED, payload: { item } });
+          }
+      });
+    }
     return () => {
       log('wsEffect - disconnecting');
       canceled = true;
-      closeWebSocket();
+      closeWebSocket?.();
     }
   }
 };

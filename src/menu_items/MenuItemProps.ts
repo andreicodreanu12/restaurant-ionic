@@ -1,4 +1,4 @@
-export interface ItemProps {
+export interface MenuItemProps {
   id?: number,
   title: string,
   description: string,
