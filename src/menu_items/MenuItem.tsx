@@ -1,8 +1,8 @@
 import React from 'react';
 import { IonItem, IonLabel, IonDatetime, IonCheckbox } from '@ionic/react'
-import { ItemProps } from './ItemProps'
+import { MenuItemProps } from './MenuItemProps'
 
-interface ItemPropsExt extends ItemProps {
+interface ItemPropsExt extends MenuItemProps {
   onEdit: (id?: number) => void;
 }
 
