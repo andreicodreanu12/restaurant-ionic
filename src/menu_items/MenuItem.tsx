@@ -9,7 +9,6 @@ interface ItemPropsExt extends MenuItemProps {
 const MenuItem: React.FC<ItemPropsExt> = ({ id, title, description, price, introduced_at, is_expensive, onEdit }) => {
   return (
     <IonItem onClick={() => onEdit(id)}>
-      <IonLabel>{id}</IonLabel>
       <IonLabel>{title}</IonLabel>
       <IonLabel>{description}</IonLabel>
       <IonLabel>{price}</IonLabel>

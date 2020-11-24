@@ -20,9 +20,11 @@ export interface AuthState {
   username?: string;
   password?: string;
   token: string;
+  onlineStatus: boolean;
 }
 
 const initialState: AuthState = {
+  onlineStatus: false,
   isAuthenticated: false,
   isAuthenticating: false,
   authenticationError: null,
@@ -40,12 +42,12 @@ const { Storage } = Plugins;
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, setState] = useState<AuthState>(initialState);
-  const { isAuthenticated, isAuthenticating, authenticationError, pendingAuthentication, token } = state;
+  const {onlineStatus, isAuthenticated, isAuthenticating, authenticationError, pendingAuthentication, token } = state;
   const login = useCallback<LoginFn>(loginCallback, []);
   const logout  = useCallback<LogoutFn>(logoutCallback, []);
   useEffect(authenticationEffect, [pendingAuthentication]);
   // useEffect(wsEffect, [token]);
-  const value = { isAuthenticated, login, logout, isAuthenticating, authenticationError, token };
+  const value = { onlineStatus, isAuthenticated, login, logout, isAuthenticating, authenticationError, token };
   log('render');
   return (
     <AuthContext.Provider value={value}>
@@ -71,14 +73,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       token: "",
     });
     (async () => {
-      await Storage.remove({ key: "token" });
+      await Storage.clear();
     })();
   }
 
   function authenticationEffect() {
     let canceled = false;
-    authenticate();
-    autoLoginCallback();
+    if(onlineStatus == false) {
+      autoLoginCallback();
+      authenticate();
+    }
     return () => {
       canceled = true;
     }
@@ -92,11 +96,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setState({
             ...state,
             token: res.value,
+            onlineStatus: true,
             pendingAuthentication: false,
             isAuthenticated: true
           })
       } catch(error) {
-        log('auto authenticate failed');
+        if(res.value)  {
+          setState({
+            ...state,
+            token: res.value,
+            pendingAuthentication: false,
+            isAuthenticated: true
+          })
+        }
       }
     }}
 
@@ -119,6 +131,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         log('authenticate succeeded');
         setState({
           ...state,
+          onlineStatus: true,
           token: token,
           pendingAuthentication: false,
           isAuthenticated: true,

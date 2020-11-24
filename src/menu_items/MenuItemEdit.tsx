@@ -13,17 +13,23 @@ import {
   IonTitle,
   IonToolbar,
   IonCheckbox,
-  IonDatetime
+  IonDatetime,
+  IonText
 } from '@ionic/react';
 import { ItemContext } from './MenuItemProvider';
 import { RouteComponentProps } from 'react-router';
 import { MenuItemProps } from './MenuItemProps';
+import { AuthContext } from '../auth';
+import { getLogger } from '../core';
+
+const log = getLogger('menuItemEdit');
 
 interface ItemEditProps extends RouteComponentProps<{
   id?: string;
 }> { }
 
 const MenuItemEdit: React.FC<ItemEditProps> = ({ history, match }) => {
+  const {onlineStatus } = useContext(AuthContext);
   const { items, saving, savingError, saveItem, deleteItem } = useContext(ItemContext);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -31,6 +37,14 @@ const MenuItemEdit: React.FC<ItemEditProps> = ({ history, match }) => {
   const [introduced_at, setIntroduced] = useState('');
   const [is_expensive, setExpensive] = useState(false);
   const [item, setItem] = useState<MenuItemProps>();
+  const [status, setStatus] = useState<String>('');
+
+
+  useEffect(() => {
+    if( onlineStatus == false)
+      setStatus("Cannot connect to server, but your changes will be saved")
+  },[status]);
+
   useEffect(() => {
     const routeId = Number(match.params.id) || 0;
     const item = items?.find(it => it.id === routeId);
@@ -46,7 +60,7 @@ const MenuItemEdit: React.FC<ItemEditProps> = ({ history, match }) => {
   }, [match.params.id, items]);
   const handleSave = () => {
     const editedItem = item ? { ...item, title, description, price, introduced_at, is_expensive } : { title, description, price, introduced_at, is_expensive };
-    saveItem && saveItem(editedItem).then(() => history.goBack());
+    saveItem?.(editedItem).then(() => history.goBack());
   };
   const handleDelete = () => {
     const editedItem = item
@@ -54,11 +68,20 @@ const MenuItemEdit: React.FC<ItemEditProps> = ({ history, match }) => {
       : { title, description, price, introduced_at, is_expensive };
     deleteItem && deleteItem(editedItem).then(() => history.goBack());
   }
+
+  const backToMenu = () => {
+    history.goBack();
+  }
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
           <IonTitle>Edit</IonTitle>
+          <IonButtons slot="start">
+            <IonButton onClick={backToMenu}>
+              Back
+            </IonButton>
+          </IonButtons>
           <IonButtons slot="end">
             <IonButton onClick={handleSave}>
               Save
@@ -94,6 +117,7 @@ const MenuItemEdit: React.FC<ItemEditProps> = ({ history, match }) => {
             <IonCheckbox checked={is_expensive} onIonChange={e => setExpensive(e.detail.checked)} />
           </IonItem>
           <IonLoading isOpen={saving} />
+          <IonText> {status} </IonText>
           {savingError && (
             <div>{savingError.message || 'Failed to save item'}</div>
           )}
