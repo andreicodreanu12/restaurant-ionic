@@ -66,13 +66,13 @@ const reducer: (state: ItemsState, action: ActionProps) => ItemsState =
       case SAVE_ITEM_SUCCEEDED:
         const menu_items = [...(state.items || [])];
         const item = payload.item;
+        item.is_saved = true;
         const index = menu_items.findIndex(it => it.id === item.id);
         if (index === -1) {
           menu_items.splice(0, 0, item);
         } else {
           menu_items[index] = item;
         }
-        log(menu_items)
         return { ...state, items: menu_items, saving: false };
       case SAVE_ITEM_FAILED:
         return { ...state, savingError: payload.error, items: payload.items, saving: false };
@@ -95,6 +95,7 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { networkStatus } = useNetwork();
   const { items, fetching, fetchingError, saving, savingError, deleting } = state;
+  useEffect(networkEffect, [networkStatus]);
   useEffect(getItemsEffect, [token]);
   useEffect(wsEffect, [token]);
   const saveItem = useCallback<SaveItemFn>(saveItemCallback, [token]);
@@ -108,6 +109,34 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
       {children}
     </ItemContext.Provider>
   );
+
+  function networkEffect() {
+    if (networkStatus.connected) {
+      updateDatabase();
+    }
+  }
+
+  async function updateDatabase() {
+    if (token) {
+      Storage.keys().then(
+        result => {
+          result.keys.forEach(key => {
+            const item = Storage.get({ key: key });
+            item.then(
+              value => {
+                if (value.value != null && key != 'token') {
+                  var item = JSON.parse(value.value);
+                  var id = Number(item.id)
+                  isNaN(id) ? createItem(token, item) : updateItem(token, item);
+                }
+              }
+            )
+          })
+        }
+      );
+      getItemsEffect()
+    }
+  }
 
   async function setItemsCallback() {
     const items: MenuItemProps[] = [];
@@ -157,6 +186,7 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
           key: 'token',
           value: token
         });
+        setSavedStatus(items);
         saveMenuItemsInStorage(items);
         if (!canceled) {
           dispatch({ type: FETCH_ITEMS_SUCCEEDED, payload: { items } });
@@ -182,6 +212,12 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
     }
   }
 
+  function setSavedStatus(items: MenuItemProps[]) {
+    items.forEach(element => {
+      element.is_saved = true;
+    });
+  }
+
   async function saveItemCallback(item: MenuItemProps) {
     try {
       log('saveItem started');
@@ -189,6 +225,7 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
       const savedItem = await (item.id ? updateItem(token, item) : createItem(token, item));
     } catch (error) {
       log('saveItem failed');
+      item.is_saved = false;
       makeLocalChange(item);
       const items: MenuItemProps[] = [];
       Storage.keys().then(
@@ -238,6 +275,7 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
   }
 
   function saveMenuItemsInStorage(items: MenuItemProps[]) {
+    log("itemele din local storagte sunt", items)
     items.forEach(menu_item => {
       Storage.set({
         key: menu_item.id?.toString() || '0',
@@ -259,6 +297,11 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
         if (mes != undefined)
           if (mes.type === 'created' || mes.type === 'updated') {
             let item = mes.payload
+            item.is_saved = true
+            Storage.set({
+              key: item.id?.toString() || '0',
+              value: JSON.stringify(item)
+            })
             dispatch({ type: SAVE_ITEM_SUCCEEDED, payload: { item } });
           }
       });

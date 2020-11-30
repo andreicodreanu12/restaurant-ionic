@@ -19,6 +19,7 @@
     "actioncable-js": "^5.0.0-rc2",
     "axios": "^0.21.0",
     "ionicons": "^5.0.0",
+    "rc-if": "0.0.12",
     "react": "^16.13.0",
     "react-actioncable-provider": "^2.0.0",
     "react-dom": "^16.13.0",

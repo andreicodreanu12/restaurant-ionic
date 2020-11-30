@@ -104,9 +104,9 @@ const Menu: React.FC<RouteComponentProps> = ({ history }) => {
         <IonText>Server is: {status}</IonText>
         {items &&
           items.filter(menu_item => menu_item.title.indexOf(search) >= 0)
-            .map(({ id, title, description, price, introduced_at, is_expensive }) => {
+            .map(({ id, title, description, price, introduced_at, is_expensive, is_saved }) => {
               return (
-                <MenuItem key={id} id={id} title={title} description={description} price={price} introduced_at={introduced_at} is_expensive={is_expensive} onEdit={id => history.push(`/item/${id}`)} />
+                <MenuItem key={id} id={id} title={title} description={description} price={price} introduced_at={introduced_at} is_expensive={is_expensive} is_saved={is_saved} onEdit={id => history.push(`/item/${id}`)} />
               );
             })}
         {/* <IonInfiniteScroll
