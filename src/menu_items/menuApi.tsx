@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { filter } from 'ionicons/icons';
 import { getLogger, authConfig, baseUrl, withLogs } from '../core';
 import { MenuItemProps } from './MenuItemProps';
 
@@ -22,6 +23,10 @@ export const removeItem: (token: string, item: MenuItemProps) => Promise<MenuIte
   return withLogs(axios.delete(`${itemUrl}/${item.id}`,  authConfig(token)), 'updateItem');
 }
 
+export const filterItems: (token: string, filter: string) => Promise<MenuItemProps[]> = (token,filter) => {
+  return withLogs(axios.get(`${itemsUrl}?filter=${filter}`, authConfig(token)), 'filterItems');
+}
+
 interface MessageData {
   type: string;
   message: { type: string,
@@ -29,7 +34,7 @@ interface MessageData {
 }
 
 export const newWebSocket = (token: string, onMessage: (data: MessageData) => void) => {
-  const ws = new WebSocket(`ws://localhost:3000/cable/menu_channel`);
+  const ws = new WebSocket(`ws://192.168.0.143:3000/cable/menu_channel`);
   ws.onopen = () => {
     log('web socket onopen');
     ws.send(JSON.stringify({
@@ -47,7 +52,7 @@ export const newWebSocket = (token: string, onMessage: (data: MessageData) => vo
     log('web socket onerror');
   };
   ws.onmessage = messageEvent => {
-    log('web socket onmessage');
+    log(messageEvent.data);
     onMessage(JSON.parse(messageEvent.data));
   };
   return () => {

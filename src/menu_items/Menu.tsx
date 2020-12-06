@@ -11,36 +11,42 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
+  IonActionSheet,
   IonInfiniteScroll,
   IonInfiniteScrollContent,
   useIonViewWillEnter,
   IonSelectOption,
   IonSelect,
-  IonSearchbar
+  IonSearchbar,
+  IonText
 } from '@ionic/react';
-import { add } from 'ionicons/icons';
+import { add, camera, close, trash, map } from "ionicons/icons";
 import MenuItem from './MenuItem';
 import { authConfig, getLogger } from '../core';
 import { ItemContext } from './MenuItemProvider';
 import { RouteComponentProps } from 'react-router';
 import { Redirect } from 'react-router-dom';
-import { Plugins } from '@capacitor/core';
-import { MenuItemProps } from './MenuItemProps';
 import { AuthContext } from '../auth';
-import axios from 'axios';
+import { useAppState } from './AppState';
+import { useNetwork } from './Network';
+import { Photo, usePhotoGallery } from '../utils/usePhotoGallery';
+
 
 const log = getLogger('ItemList')
 
 const Menu: React.FC<RouteComponentProps> = ({ history }) => {
-  const { token, logout } = useContext(AuthContext);
+  const { photos, takePhoto, deletePhoto } = usePhotoGallery();
+  const [photoToDelete, setPhotoDelete] = useState<Photo>();
+  const { appState } = useAppState();
+  const { onlineStatus, logout } = useContext(AuthContext);
+  const { networkStatus } = useNetwork();
   const [disableInfiniteScroll, setDisableInfiniteScroll] = useState<boolean>(false);
-  const { Storage } = Plugins;
-  const { fetching, fetchingError } = useContext(ItemContext);
+  const { items, filterFunction, fetching, fetchingError, setItemsFromStorage } = useContext(ItemContext);
   const [search, setSearch] = useState<string>("");
-  const [index, setIndex] = useState(1);
-  const [items, setItems] = useState<MenuItemProps[]>([]);
+  const [index, setIndex] = useState(0);
   const selectOptions = ["Main courses", "Salad", "Dessert", "Second courses", "All"]
   const [filter, setFilter] = useState<string | undefined>(undefined);
+  const [status, setStatus] = useState<string>("");
 
   const handleLogout = () => {
     logout?.();
@@ -48,22 +54,10 @@ const Menu: React.FC<RouteComponentProps> = ({ history }) => {
   }
 
   async function fetchData(reset?: boolean) {
-    const menuItems: MenuItemProps[] | undefined = reset ? [] : items;
-    const url: string = filter ? `http://localhost:3000/items?filter=${filter}` : `http://localhost:3000/items`;
-    const result = axios.get(url, authConfig(token))
-    result.then(
-      async (data) => {
-        if (data && data.data && data.data.length > 0) {
-          setItems([...menuItems, ...data.data])
-          setIndex(index + 1);
-          setDisableInfiniteScroll(data.data.length < 3);
-        }
-        else  {
-          setDisableInfiniteScroll(true);
-        }
-      }
-    )
-    .catch(err => console.error(err));
+    if (onlineStatus == true) {
+      if (filter != undefined)
+        filterFunction?.(filter)
+    }
   }
 
   useIonViewWillEnter(async () => {
@@ -79,13 +73,24 @@ const Menu: React.FC<RouteComponentProps> = ({ history }) => {
     ($event.target as HTMLIonInfiniteScrollElement).complete();
   }
 
-  log('ItemList render');
+  useEffect(() => {
+    if (fetchingError == null)
+      setStatus("Online")
+    else
+      setStatus("Offline")
+      fetchData(true)
+  }, [fetchingError]);
+
   return (
     <IonPage>
       <IonHeader>
+        <IonText>App state is: {JSON.stringify(appState)} </IonText>
+        <IonText>Network status is: {JSON.stringify(networkStatus)} </IonText>
         <IonToolbar>
           <IonTitle>My restaurant</IonTitle>
           <IonButtons slot="end">
+            <IonButton onClick={() => history.push('/map')}>Map</IonButton>
+            <IonButton onClick={() => history.push('/photos')}>Photos</IonButton>
             <IonButton onClick={handleLogout}>Logout</IonButton>
           </IonButtons>
         </IonToolbar>
@@ -103,21 +108,38 @@ const Menu: React.FC<RouteComponentProps> = ({ history }) => {
           debounce={1000}
           onIonChange={(e) => setSearch(e.detail.value!)}
         ></IonSearchbar>
+        <IonText>Server is: {status}</IonText>
         {items &&
           items.filter(menu_item => menu_item.title.indexOf(search) >= 0)
-            .map(({ id, title, description, price, introduced_at, is_expensive }) => {
-            return (
-              <MenuItem key={id} id={id} title={title} description={description} price={price} introduced_at={introduced_at} is_expensive={is_expensive} onEdit={id => history.push(`/item/${id}`)} />
-            );
-          })}
-        {fetchingError && (
+            .map(({ id, title, description, price, introduced_at, is_expensive, is_saved }) => {
+              return (
+                <MenuItem key={id} id={id} title={title} description={description} price={price} introduced_at={introduced_at} is_expensive={is_expensive} is_saved={is_saved} onEdit={id => history.push(`/item/${id}`)} />
+              );
+            })}
+        {/* <IonInfiniteScroll
+          threshold="100px"
+          disabled={disableInfiniteScroll}
+          onIonInfinite={(e: CustomEvent<void>) => searchNext(e)}
+        >
+          <IonInfiniteScrollContent loadingText="Loading more dishes..."></IonInfiniteScrollContent>
+        </IonInfiniteScroll> */}
+        {/* {fetchingError && (
           <div>{fetchingError.message || 'Failed to fetch items'}</div>
-        )}
+        )} */}
         <IonFab vertical="bottom" horizontal="end" slot="fixed">
           <IonFabButton onClick={() => history.push('/item')}>
             <IonIcon icon={add} />
           </IonFabButton>
         </IonFab>
+        {/* <IonFab vertical="bottom" horizontal="start" slot="fixed">
+          <IonFabButton
+            onClick={() => {
+              history.push("/items/map");
+            }}
+          >
+            <IonIcon icon={map} />
+          </IonFabButton>
+        </IonFab> */}
       </IonContent>
     </IonPage>
   );

@@ -3,6 +3,8 @@ import { Redirect, Route } from 'react-router-dom';
 import { IonApp, IonRouterOutlet } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { ItemEdit, Menu } from './menu_items'
+import { Photos } from './services'
+import { Map } from './services'
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -32,6 +34,8 @@ const App: React.FC = () => (
         <IonRouterOutlet>
           <AuthProvider>
             <Route path="/login" component={Login} exact = {true}/>
+            <Route path="/photos" component={Photos} exact= {true}/>
+            <Route path='/map' component={Map} exact= {true}/>
             <ItemProvider>
               <PrivateRoute path="/items" component={Menu} exact={true} />
               <PrivateRoute path='/item' component={ItemEdit} exact={true} />

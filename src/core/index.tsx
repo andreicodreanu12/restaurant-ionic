@@ -1,4 +1,4 @@
-export const baseUrl = 'localhost:3000'
+export const baseUrl = '192.168.0.143:3000'
 
 export const getLogger: (tag: string) => (...args: any) => void =
     tag => (...args) => console.log(tag, ...args);
@@ -14,6 +14,7 @@ export function withLogs<T>(promise: Promise<ResponseProps<T>>, fnName: string):
     return promise
       .then(res => {
         log(`${fnName} - succeeded`);
+        log(promise)
         return Promise.resolve(res.data);
       })
       .catch(err => {
