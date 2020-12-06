@@ -11,6 +11,7 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
+  IonActionSheet,
   IonInfiniteScroll,
   IonInfiniteScrollContent,
   useIonViewWillEnter,
@@ -19,7 +20,7 @@ import {
   IonSearchbar,
   IonText
 } from '@ionic/react';
-import { add } from 'ionicons/icons';
+import { add, camera, close, trash, map } from "ionicons/icons";
 import MenuItem from './MenuItem';
 import { authConfig, getLogger } from '../core';
 import { ItemContext } from './MenuItemProvider';
@@ -28,10 +29,14 @@ import { Redirect } from 'react-router-dom';
 import { AuthContext } from '../auth';
 import { useAppState } from './AppState';
 import { useNetwork } from './Network';
+import { Photo, usePhotoGallery } from '../utils/usePhotoGallery';
+
 
 const log = getLogger('ItemList')
 
 const Menu: React.FC<RouteComponentProps> = ({ history }) => {
+  const { photos, takePhoto, deletePhoto } = usePhotoGallery();
+  const [photoToDelete, setPhotoDelete] = useState<Photo>();
   const { appState } = useAppState();
   const { onlineStatus, logout } = useContext(AuthContext);
   const { networkStatus } = useNetwork();
@@ -84,6 +89,8 @@ const Menu: React.FC<RouteComponentProps> = ({ history }) => {
         <IonToolbar>
           <IonTitle>My restaurant</IonTitle>
           <IonButtons slot="end">
+            <IonButton onClick={() => history.push('/map')}>Map</IonButton>
+            <IonButton onClick={() => history.push('/photos')}>Photos</IonButton>
             <IonButton onClick={handleLogout}>Logout</IonButton>
           </IonButtons>
         </IonToolbar>
@@ -124,6 +131,15 @@ const Menu: React.FC<RouteComponentProps> = ({ history }) => {
             <IonIcon icon={add} />
           </IonFabButton>
         </IonFab>
+        {/* <IonFab vertical="bottom" horizontal="start" slot="fixed">
+          <IonFabButton
+            onClick={() => {
+              history.push("/items/map");
+            }}
+          >
+            <IonIcon icon={map} />
+          </IonFabButton>
+        </IonFab> */}
       </IonContent>
     </IonPage>
   );

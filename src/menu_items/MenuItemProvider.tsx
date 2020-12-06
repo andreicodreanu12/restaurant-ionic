@@ -90,6 +90,8 @@ interface ItemProviderProps {
   children: PropTypes.ReactNodeLike,
 }
 
+const reserved_storage = ['token', 'photos']
+
 export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
   const { token } = useContext(AuthContext);
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -124,7 +126,7 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
             const item = Storage.get({ key: key });
             item.then(
               value => {
-                if (value.value != null && key != 'token') {
+                if (value.value != null && !reserved_storage.includes(key)) {
                   var item = JSON.parse(value.value);
                   var id = Number(item.id)
                   isNaN(id) ? createItem(token, item) : updateItem(token, item);
@@ -146,7 +148,7 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
           const item = Storage.get({ key: key });
           item.then(
             value => {
-              if (value.value != null && key != 'token')
+              if (value.value != null && !reserved_storage.includes(key))
                 items.push(JSON.parse(value.value));
             }
           )
@@ -200,7 +202,7 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
               const item = Storage.get({ key: key });
               item.then(
                 value => {
-                  if (value.value != null && key != 'token')
+                  if (value.value != null && key != 'token' && key != 'photos')
                     items.push(JSON.parse(value.value));
                 }
               )
@@ -234,7 +236,7 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
             const item = Storage.get({ key: key });
             item.then(
               value => {
-                if (value.value != null && key != 'token')
+                if (value.value != null && !reserved_storage.includes(key))
                   items.push(JSON.parse(value.value));
               }
             )
