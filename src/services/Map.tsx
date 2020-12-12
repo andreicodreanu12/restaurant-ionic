@@ -1,17 +1,47 @@
-import { IonContent, IonPage, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle } from "@ionic/react";
-import React from "react";
+import { IonContent, IonPage, IonHeader, IonToolbar, IonButtons, IonButton, IonLoading, IonTitle } from "@ionic/react";
+import React, { useContext, useEffect, useState } from "react";
 import { RouteComponentProps } from "react-router";
-import { useMyLocation } from "../utils/useMyLocation";
-import { MyMap } from "./MyMap";
+import { ItemContext } from "../menu_items/MenuItemProvider";
+import { MenuItemProps } from '../menu_items/MenuItemProps';
+import { GoogleMap, Marker } from 'react-google-maps';
+import { getLogger } from '../core';
+import { Plugins } from '@capacitor/core';
+import { GeneralMap }  from './GeneralMap';
+
+const { Storage } = Plugins;
+
+const log = getLogger('Map')
 
 const Map: React.FC<RouteComponentProps> = ({ history }) => {
-  const myLocation = useMyLocation();
-  const { latitude: lat, longitude: lng } = myLocation.position?.coords || {};
+  const [items, setItems] = useState<MenuItemProps[]>();
+  useEffect(() => {
+    const items: MenuItemProps[] = [];
+        Storage.keys().then(
+          result => {
+            result.keys.forEach(key => {
+              const item = Storage.get({ key: key });
+              item.then(
+                value => {
+                  if (value.value != null && key != 'token' && key != 'photos')
+                    items.push(JSON.parse(value.value));
+                }
+              )
+            })
+          }
+        );
+    setItems(items)
+  }, [])
+  useEffect(() => {
+    log(items)
+  }, [items])
+
+ log(items)
+
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Photo Galery</IonTitle>
+          <IonTitle>Map</IonTitle>
           <IonButtons slot="start">
             <IonButton onClick={() => history.goBack()}>
               Back
@@ -20,24 +50,12 @@ const Map: React.FC<RouteComponentProps> = ({ history }) => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <div>My Location is</div>
-        <div>Latitude: {lat}</div>
-        <div>Longitude: {lng}</div>
-        {lat && lng && (
-          <MyMap
-            lat={lat}
-            lng={lng}
-            onMapClick={log("onMap")}
-            onMarkerClick={log("onMarker")}
-          />
-        )}
+      <GeneralMap
+          locations= {items}
+        />
       </IonContent>
     </IonPage>
   );
-
-  function log(source: string) {
-    return (e: any) => console.log(source, e.latLng.lat(), e.latLng.lng());
-  }
 };
 
 export default Map;

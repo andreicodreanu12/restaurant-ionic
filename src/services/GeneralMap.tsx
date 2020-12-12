@@ -1,15 +1,16 @@
 import React from "react";
 import { withScriptjs, withGoogleMap, GoogleMap, Marker } from 'react-google-maps';
 import { compose, withProps } from 'recompose';
+import { MenuItemProps } from "../menu_items/MenuItemProps";
+import { useMyLocation } from '../utils/useMyLocation';
 import { mapsApiKey } from '../utils/mapsApiKey';
+import { locationSharp } from "ionicons/icons";
 
 interface MyMapProps {
-  lat?: number;
-  lng?: number;
-  onMapClick: (e: any) => void
+  locations: MenuItemProps[],
 }
 
-export const MyMap =
+export const GeneralMap =
   compose<MyMapProps, any>(
     withProps({
       googleMapURL:
@@ -18,16 +19,23 @@ export const MyMap =
       containerElement: <div style={{ height: `90%` }} />,
       mapElement: <div style={{ height: `90%` }} />
     }),
+
     withScriptjs,
     withGoogleMap
   )(props => (
     <GoogleMap
       defaultZoom={8}
-      defaultCenter={{ lat: props.lat, lng: props.lng }}
-      onClick={props.onMapClick}
+      defaultCenter={{ lat: 50.32, lng: 46.12 }}
     >
-      <Marker
-        position={{ lat: props.lat, lng: props.lng }}
-      />
+      {props.locations.map(item => {
+        var latI = Number(item.lat)
+        var longL = Number(item.long)
+
+        return (
+          <Marker
+            key={item.id}
+            position= {{ lat: latI, lng: longL } } />
+        )
+      })}
     </GoogleMap>
   ))

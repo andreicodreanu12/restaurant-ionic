@@ -12,8 +12,6 @@ import {
   IonTitle,
   IonToolbar,
   IonActionSheet,
-  IonInfiniteScroll,
-  IonInfiniteScrollContent,
   useIonViewWillEnter,
   IonSelectOption,
   IonSelect,
@@ -35,18 +33,16 @@ import { Photo, usePhotoGallery } from '../utils/usePhotoGallery';
 const log = getLogger('ItemList')
 
 const Menu: React.FC<RouteComponentProps> = ({ history }) => {
-  const { photos, takePhoto, deletePhoto } = usePhotoGallery();
-  const [photoToDelete, setPhotoDelete] = useState<Photo>();
-  const { appState } = useAppState();
   const { onlineStatus, logout } = useContext(AuthContext);
   const { networkStatus } = useNetwork();
-  const [disableInfiniteScroll, setDisableInfiniteScroll] = useState<boolean>(false);
   const { items, filterFunction, fetching, fetchingError, setItemsFromStorage } = useContext(ItemContext);
   const [search, setSearch] = useState<string>("");
-  const [index, setIndex] = useState(0);
   const selectOptions = ["Main courses", "Salad", "Dessert", "Second courses", "All"]
   const [filter, setFilter] = useState<string | undefined>(undefined);
   const [status, setStatus] = useState<string>("");
+
+
+  log("ine menu items are ", items)
 
   const handleLogout = () => {
     logout?.();
@@ -84,8 +80,7 @@ const Menu: React.FC<RouteComponentProps> = ({ history }) => {
   return (
     <IonPage>
       <IonHeader>
-        <IonText>App state is: {JSON.stringify(appState)} </IonText>
-        <IonText>Network status is: {JSON.stringify(networkStatus)} </IonText>
+        <IonText>Network connection: {JSON.stringify(networkStatus.connected)} </IonText>
         <IonToolbar>
           <IonTitle>My restaurant</IonTitle>
           <IonButtons slot="end">
@@ -111,35 +106,16 @@ const Menu: React.FC<RouteComponentProps> = ({ history }) => {
         <IonText>Server is: {status}</IonText>
         {items &&
           items.filter(menu_item => menu_item.title.indexOf(search) >= 0)
-            .map(({ id, title, description, price, introduced_at, is_expensive, is_saved }) => {
+            .map(({ id, title, description, price, introduced_at, is_expensive, is_saved, path, lat, long }) => {
               return (
-                <MenuItem key={id} id={id} title={title} description={description} price={price} introduced_at={introduced_at} is_expensive={is_expensive} is_saved={is_saved} onEdit={id => history.push(`/item/${id}`)} />
+                <MenuItem key={id} id={id} title={title} description={description} price={price} introduced_at={introduced_at} is_expensive={is_expensive} is_saved={is_saved} path={path} lat={lat} long={long} onEdit={id => history.push(`/item/${id}`)} />
               );
             })}
-        {/* <IonInfiniteScroll
-          threshold="100px"
-          disabled={disableInfiniteScroll}
-          onIonInfinite={(e: CustomEvent<void>) => searchNext(e)}
-        >
-          <IonInfiniteScrollContent loadingText="Loading more dishes..."></IonInfiniteScrollContent>
-        </IonInfiniteScroll> */}
-        {/* {fetchingError && (
-          <div>{fetchingError.message || 'Failed to fetch items'}</div>
-        )} */}
         <IonFab vertical="bottom" horizontal="end" slot="fixed">
           <IonFabButton onClick={() => history.push('/item')}>
             <IonIcon icon={add} />
           </IonFabButton>
         </IonFab>
-        {/* <IonFab vertical="bottom" horizontal="start" slot="fixed">
-          <IonFabButton
-            onClick={() => {
-              history.push("/items/map");
-            }}
-          >
-            <IonIcon icon={map} />
-          </IonFabButton>
-        </IonFab> */}
       </IonContent>
     </IonPage>
   );

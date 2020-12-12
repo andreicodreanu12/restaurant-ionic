@@ -74,6 +74,16 @@ http://ionicframework.com/docs/theming/ */
   --ion-color-light-contrast-rgb: 0, 0, 0;
   --ion-color-light-shade: #d7d8da;
   --ion-color-light-tint: #f5f6f9;
+
+}
+
+.imigi {
+  width: 100px;
+  height: 100px;
+}
+
+.map {
+  height: 550px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -230,3 +240,4 @@ http://ionicframework.com/docs/theming/ */
     --ion-card-background: #1e1e1e;
   }
 }
+

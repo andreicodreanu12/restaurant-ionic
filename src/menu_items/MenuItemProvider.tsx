@@ -129,7 +129,8 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
                 if (value.value != null && !reserved_storage.includes(key)) {
                   var item = JSON.parse(value.value);
                   var id = Number(item.id)
-                  isNaN(id) ? createItem(token, item) : updateItem(token, item);
+                  if(item.is_saved == false)
+                    isNaN(id) ? createItem(token, item) : updateItem(token, item);
                 }
               }
             )
@@ -183,13 +184,7 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
         dispatch({ type: FETCH_ITEMS_STARTED });
         const items = await getItems(token);
         log('fetchItems succeeded');
-        Storage.clear();
-        await Storage.set({
-          key: 'token',
-          value: token
-        });
-        setSavedStatus(items);
-        saveMenuItemsInStorage(items);
+        setStorage(items);
         if (!canceled) {
           dispatch({ type: FETCH_ITEMS_SUCCEEDED, payload: { items } });
         }
@@ -212,12 +207,6 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
         dispatch({ type: FETCH_ITEMS_FAILED, payload: { error, items } });
       }
     }
-  }
-
-  function setSavedStatus(items: MenuItemProps[]) {
-    items.forEach(element => {
-      element.is_saved = true;
-    });
   }
 
   async function saveItemCallback(item: MenuItemProps) {
@@ -276,14 +265,32 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children }) => {
     }
   }
 
-  function saveMenuItemsInStorage(items: MenuItemProps[]) {
-    log("itemele din local storagte sunt", items)
-    items.forEach(menu_item => {
-      Storage.set({
-        key: menu_item.id?.toString() || '0',
-        value: JSON.stringify(menu_item)
-      });
-    })
+  function setStorage(items: MenuItemProps[]) {
+    Storage.keys().then(
+      result => {
+        result.keys.forEach(key => {
+          const item = Storage.get({ key: key });
+          item.then(
+            value => {
+              if (value.value != null && !reserved_storage.includes(key))
+                Storage.remove({ key: key})
+            }
+          )
+        })
+      }
+    );
+
+    items.forEach(element => {
+      element.is_saved = true;
+    });
+    setTimeout(() => {
+      items.forEach(menu_item => {
+        Storage.set({
+          key: menu_item.id?.toString() || '0',
+          value: JSON.stringify(menu_item)
+        });
+      })
+  }, 500)
   }
 
   function wsEffect() {

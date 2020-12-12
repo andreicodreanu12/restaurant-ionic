@@ -21,14 +21,14 @@ import { Photo, usePhotoGallery } from '../utils/usePhotoGallery';
 import { RouteComponentProps } from 'react-router';
 
 const Photos: React.FC<RouteComponentProps> = ({history}) => {
-  const { photos, takePhoto, deletePhoto } = usePhotoGallery();
+  const { photos, deletePhoto } = usePhotoGallery();
   const [photoToDelete, setPhotoToDelete] =useState<Photo>();
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Photo Galery</IonTitle>
+          <IonTitle>Photo Gallery</IonTitle>
           <IonButtons slot="start">
             <IonButton onClick={() => history.goBack()}>
               Back
@@ -52,11 +52,6 @@ const Photos: React.FC<RouteComponentProps> = ({history}) => {
             ))}
           </IonRow>
         </IonGrid>
-        <IonFab vertical="bottom" horizontal="center" slot="fixed">
-          <IonFabButton onClick={() => takePhoto()}>
-            <IonIcon icon={camera} />
-          </IonFabButton>
-        </IonFab>
         <IonActionSheet
           isOpen={!!photoToDelete}
           buttons={[{

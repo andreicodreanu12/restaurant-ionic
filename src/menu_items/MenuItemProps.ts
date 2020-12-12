@@ -5,5 +5,8 @@ export interface MenuItemProps {
   price: number,
   introduced_at: string,
   is_expensive: boolean,
+  path?: string,
+  lat?: number,
+  long?: number,
   is_saved?: boolean
 }

@@ -16,7 +16,15 @@ import {
   IonDatetime,
   IonText,
   IonList,
-  IonListHeader
+  IonListHeader,
+  IonFab,
+  IonFabButton,
+  IonIcon,
+  IonImg,
+  IonActionSheet,
+  IonGrid,
+  IonRow,
+  IonCol
 } from '@ionic/react';
 import { ItemContext } from './MenuItemProvider';
 import { RouteComponentProps } from 'react-router';
@@ -24,6 +32,9 @@ import { MenuItemProps } from './MenuItemProps';
 import { getLogger } from '../core';
 import { useNetwork } from './Network';
 import { Plugins } from '@capacitor/core';
+import { Photo, usePhotoGallery } from '../utils/usePhotoGallery';
+import { add, camera, close, trash, map } from "ionicons/icons";
+import { MyMap } from '../services/MyMap';
 
 const log = getLogger('menuItemEdit');
 
@@ -34,17 +45,23 @@ interface ItemEditProps extends RouteComponentProps<{
 }> { }
 
 const MenuItemEdit: React.FC<ItemEditProps> = ({ history, match }) => {
+  const { photos, takePhoto, deletePhoto } = usePhotoGallery();
   const { networkStatus } = useNetwork();
   const { items, saving, savingError, saveItem, deleteItem } = useContext(ItemContext);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState(Number);
   const [introduced_at, setIntroduced] = useState('');
+  const [lat, setLat] = useState(Number);
+  const [long, setLong] = useState(Number);
+  const [path, setPath] = useState<string>('');
   const [is_expensive, setExpensive] = useState(false);
   const [item, setItem] = useState<MenuItemProps>();
   const [status, setStatus] = useState<String>('');
   const [conflicts, setConflicts] = useState(false);
   const firstUpdate = useRef(true);
+  const [photo, setPhoto] = useState<Photo>();
+  const [photoToDelete, setPhotoToDelete] =useState<Photo>();
 
   const [stashedDes, setStashedDesc] = useState('');
   const [stashedTitle, setStashedTitle] = useState('');
@@ -65,13 +82,21 @@ const MenuItemEdit: React.FC<ItemEditProps> = ({ history, match }) => {
     const item = items?.find(it => it.id === routeId);
     setItem(item);
     if (item) {
+      log("acest item este", item);
       setTitle(item.title);
       setDescription(item.description);
       setPrice(item.price);
       setIntroduced(item.introduced_at);
       setExpensive(item.is_expensive);
+      setLong(item.long || 14.12)
+      setLat(item.lat || 22.36)
     }
   }, [match.params.id, items]);
+
+  useEffect(() => {
+    if(item)
+      setPhoto(photos.find(photo => photo.resource_id == item.id?.toString()))
+  })
 
   async function checkForConflicts() {
     const editedItem = item ? { ...item, title, description, price, introduced_at, is_expensive } : { title, description, price, introduced_at, is_expensive };
@@ -139,7 +164,7 @@ const MenuItemEdit: React.FC<ItemEditProps> = ({ history, match }) => {
 
   const handleSave = () => {
     if(networkStatus.connected) {
-      const editedItem = item ? { ...item, title, description, price, introduced_at, is_expensive } : { title, description, price, introduced_at, is_expensive };
+      const editedItem = item ? { ...item, title, description, price, introduced_at, is_expensive, path, long, lat } : { title, description, price, introduced_at, is_expensive, path, long, lat };
       saveItem?.(editedItem).then(() => history.goBack());
     }
     else
@@ -207,6 +232,16 @@ const MenuItemEdit: React.FC<ItemEditProps> = ({ history, match }) => {
   const backToMenu = () => {
     history.goBack();
   }
+
+  useEffect(() => {
+    if(item) {
+      log("am intrat in useeffects")
+      const photo = photos.find(photo => photo.resource_id == item.id?.toString())
+      if(photo) {
+        setPath(photo.webviewPath || '')
+      }
+    }
+  }, [photos])
   return (
     <IonPage>
       <IonHeader>
@@ -260,6 +295,45 @@ const MenuItemEdit: React.FC<ItemEditProps> = ({ history, match }) => {
             <div>{savingError.message || 'Failed to save item'}</div>
           )}
         </IonCard>
+        <IonContent class='map'>
+        <MyMap
+            lat={ Number(lat) }
+            lng={ Number(long) }
+            onMapClick={(location: any) => {
+              setLat(location.latLng.lat());
+              setLong(location.latLng.lng());
+            }}
+          />
+        </IonContent>
+        { (item != undefined) && photos && <IonGrid>
+          <IonRow>
+            {photos.filter(p => p.resource_id == item.id!.toString()).map((photo, index) => (
+              <IonCol size="6" key={index}>
+                <IonImg onClick={() => setPhotoToDelete(photo)}
+                        src={photo.webviewPath}/>
+              </IonCol>
+            ))}
+          </IonRow>
+          </IonGrid> }
+        <IonActionSheet
+          isOpen={!!photoToDelete}
+          buttons={[{
+            text: 'Delete',
+            role: 'destructive',
+            icon: trash,
+            handler: () => {
+              if (photoToDelete) {
+                deletePhoto(photoToDelete);
+                setPhotoToDelete(undefined);
+              }
+            }
+          }, {
+            text: 'Cancel',
+            icon: close,
+            role: 'cancel'
+          }]}
+          onDidDismiss={() => setPhotoToDelete(undefined)}
+        />
         {conflicts && <IonList>
           <IonListHeader>
             Conflicts
@@ -286,6 +360,14 @@ const MenuItemEdit: React.FC<ItemEditProps> = ({ history, match }) => {
             </IonButtons>}
           </IonItem>}
         </IonList>}
+        <IonFab vertical="bottom" horizontal="center" slot="fixed">
+          <IonFabButton onClick={() => { if(!item) { takePhoto('undefined') }
+                                            else  { takePhoto(item.id!.toString())
+                                              }
+                                               } }>
+            <IonIcon icon={camera} />
+          </IonFabButton>
+        </IonFab>
       </IonContent>
     </IonPage>
   )
